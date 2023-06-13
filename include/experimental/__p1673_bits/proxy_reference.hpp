@@ -151,7 +151,7 @@ class proxy_reference : proxy_reference_base {
 private:
   static_assert(std::is_same_v<Value, std::remove_cv_t<Value>>);
   using this_type = proxy_reference<Reference, Value, Derived>;
-  
+
   Reference reference_;
 
 public:
@@ -170,22 +170,22 @@ public:
   ////////////////////////////////////////////////////////////
   // Unary negation
   ////////////////////////////////////////////////////////////
-  
+
   friend auto operator-(const derived_type& cs)
   {
     return -value_type(cs);
   }
 
-  // Case 1: rhs is a subclass of proxy_reference of a possibly different type.    
+  // Case 1: rhs is a subclass of proxy_reference of a possibly different type.
 #define P1673_PROXY_REFERENCE_ARITHMETIC_OPERATOR_CASE1( SYMBOL ) \
-  template<class Rhs, std::enable_if_t<std::is_base_of_v<proxy_reference_base, Rhs>, bool> = true> \
+  template<class Rhs> requires (std::is_base_of_v<proxy_reference_base, Rhs>) \
   friend auto \
   operator SYMBOL (derived_type lhs, Rhs rhs) \
   { \
     using rhs_value_type = typename Rhs::value_type; \
     return value_type(lhs) SYMBOL rhs_value_type(rhs); \
   }
-  
+
   // Case 2: rhs is NOT a subclass of proxy_reference
   //
   // Another way to work around the lack of overloaded operators for
@@ -193,8 +193,8 @@ public:
   // an mdspan "atomic," and for that function to use something other
   // than atomic_ref if the value_type is complex<R>.
 #define P1673_PROXY_REFERENCE_ARITHMETIC_OPERATOR_CASE2( SYMBOL ) \
-  template<class Rhs, std::enable_if_t<! std::is_base_of_v<proxy_reference_base, Rhs>, bool> = true> \
-  friend auto				   \
+  template<class Rhs> requires (! std::is_base_of_v<proxy_reference_base, Rhs>) \
+  friend auto \
   operator SYMBOL (derived_type lhs, Rhs rhs) \
   { \
     if constexpr (impl::is_atomic_ref_not_arithmetic_v<Rhs>) { \
@@ -206,8 +206,8 @@ public:
 
   // Case 3: lhs is not a subclass of proxy_reference, rhs is derived_type.
 #define P1673_PROXY_REFERENCE_ARITHMETIC_OPERATOR_CASE3( SYMBOL ) \
-  template<class Lhs, std::enable_if_t<! std::is_base_of_v<proxy_reference_base, Lhs>, bool> = true> \
-  friend auto				   \
+  template<class Lhs> requires (! std::is_base_of_v<proxy_reference_base, Lhs>) \
+  friend auto \
   operator SYMBOL (Lhs lhs, derived_type rhs) \
   { \
     if constexpr (impl::is_atomic_ref_not_arithmetic_v<Lhs>) { \
@@ -221,7 +221,7 @@ public:
   P1673_PROXY_REFERENCE_ARITHMETIC_OPERATOR_CASE1( SYMBOL ) \
   P1673_PROXY_REFERENCE_ARITHMETIC_OPERATOR_CASE2( SYMBOL ) \
   P1673_PROXY_REFERENCE_ARITHMETIC_OPERATOR_CASE3( SYMBOL )
-  
+
   ////////////////////////////////////////////////////////////
   // Binary plus, minus, times, and divide
   ////////////////////////////////////////////////////////////
@@ -242,7 +242,7 @@ public:
   friend auto real(const derived_type& x) {
     return real_part(value_type(static_cast<const this_type&>(x)));
   }
-  
+
   friend auto imag(const derived_type& x) {
     return imag_part(value_type(static_cast<const this_type&>(x)));
   }
